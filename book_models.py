@@ -1,3 +1,15 @@
+from enum import Enum
+from typing import Any
+
+from exceptions import InvalidBookStatusError
+
+
+class BookStatus(Enum):
+    """Enum for book statuses."""
+    AVAILABLE = "available"
+    CHECKED_OUT = "checked_out"
+
+
 class Book:
     """
     Class representing a book in the library.
@@ -10,15 +22,38 @@ class Book:
         :param title: Title of the book.
         :param author: Author of the book.
         :param year: Year of publication.
-        :param status: Status of the book.
+        :param status: Status of the book ("available" or "checked_out").
         """
         self.id = book_id
-        self.title = title
-        self.author = author
-        self.year = year
-        self.status = status
+        self.title = title.strip()
+        self.author = author.strip()
+        self.year = self.validate_year(year)
+        self.set_status(status)
 
-    def to_dict(self) -> dict:
+    def set_status(self, status: str) -> None:
+        """
+        Set the status of the book, ensuring it's valid.
+        :param status: New status of the book.
+        :raises InvalidBookStatusError: If the status is invalid.
+        """
+        try:
+            self.status = BookStatus(status.lower())
+        except ValueError:
+            raise InvalidBookStatusError(status)
+
+    @staticmethod
+    def validate_year(year: int) -> int:
+        """
+        Validate the publication year.
+        :param year: Year to validate.
+        :return: Validated year.
+        :raises ValueError: If the year is not positive or not an integer.
+        """
+        if not isinstance(year, int) or year <= 0:
+            raise ValueError("Year must be a positive integer.")
+        return year
+
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert the book instance to a dictionary format.
         :return: A dictionary representation of the book.
@@ -28,11 +63,11 @@ class Book:
             "title": self.title,
             "author": self.author,
             "year": self.year,
-            "status": self.status,
+            "status": self.status.value,
         }
 
     @staticmethod
-    def from_dict(data: dict) -> "Book":
+    def from_dict(data: dict[str, Any]) -> "Book":
         """
         Create a book instance from a dictionary.
         :param data: Dictionary containing book data.
@@ -45,3 +80,11 @@ class Book:
             year=data["year"],
             status=data["status"],
         )
+
+
+    def __repr__(self) -> str:
+        """
+        Representation of the book instance.
+        :return: String representation of the book.
+        """
+        return f"Book(id={self.id}, title='{self.title}', author='{self.author}', year={self.year}, status='{self.status.value}')"
